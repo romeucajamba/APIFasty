@@ -4,66 +4,87 @@ const server = fastify({
     logger: true,
 })
 
-const users = [
-    {
-        id: 1,
-        title:'Software móveis',
-        author: 'Romeu Cajamba',
-        description: 'Desenvolvimento mobile com React Native'
-    },
-    {
-        id: 2,
-        title:'Desenvolvimento de webSites',
-        author: 'Mario Varela',
-        description: 'Desenvolvimento web fullStack'
-    },
-    {
-        id: 3,
-        title:'Desenvolviment FrontEnd',
-        author: 'Lourenç Cardoso',
-        description: 'Desenvolvimento de webSite ClienteSide'
-    },
-]
+//Registrar meu banco dedados mysql
+//Importar o plugin instaldo
+//Coectar
+
+server.register(require("@fastify/mysql"), {
+    connectionString: "mysql://root@localhost:3306/BOOKS",
+})
 
 server.get('/', (req, reply) => {
-    reply.send('Pesquisa por usuário na rota: ')
+   reply.send('Navega entre as rotas, faça rquisições ou envia recursoso!!')
+})
+
+//Rota de livros
+
+//Vai me retornar os dados vindo do banco de dados
+
+server.get('/books', (request, reply) => {
+    server.mysql.query(
+        "SELECT id, athor, title, description FROM BOOK", 
+        function sendStatus(error, result) {
+            reply.send(error || result)
+        }
+    )
+})
+
+//Buscar dados por id
+server.get('/books/:id', (request, reply) => {
+    server.mysql.query(
+        `SELECT id, athor, title, description FROM BOOK WHERE id = ${Number(request.params.id)}`,
+        function sendUserId(error, result) {
+            reply.send(error || result)
+        }
+    )
 })
 
 
-server.get('/users', (req, reply) => {
-    return (users)
+//Vai enviar os dados para o banco de dados
+server.post('/books', (request, reply) => {
+    server.mysql.query(
+        `INSERT INTO BOOK (id, athor, title, description) VALUES('${request.body.id}', '${request.body.athor}', '${request.body.title}', '${request.body.description}')`,
+        function sendPost(error, result) {
+            reply.send(error || result)
+        }
+    )
 })
 
-server.get('/users/:id', (req, reply) => {
-    const {id} = req.params;
-    const user = users.find(u => u.id === parseInt(id))
+//Alterar os dados do livro por id
+server.put('/books/:id', (request, reply) => {
+    server.mysql.query(
+        `UPDATE BOOK SET 
+         athor = ${request.body.athor}, 
+         title = ${request.body.title}, 
+         description = ${request.body.description},
+         WHERE id = ${Number(request.params.id)}`,
+         
 
-    if (!user){
-        reply.code(404).send({error: 'usuario não encontrado'})
+         function updateData(error, result){
+            reply.send(error || result)
+         }
+    )
+})
+
+//Pagar os dados por id
+server.delete('/books/:id', (request, reply) => {
+    server.mysql.query(
+        `DELETE FROM BOOK WHERE BOOK.id = ${request.params.id}`,
+        function deleteData(error, result){
+            reply.send(error || result)
+        }
+    )
+})
+
+ async function turnOn() {
+        try {
+            await server.listen({
+            port: 3000
+        })
+    } catch (error) {
+        console.error(error)
+        process.exit(1)    
     }
-    else{
-        reply.send(user)
-    }
-})
-
-server.post('/users', (req, reply) => {
-    const { title, author, description } = req.body;
-
-    const id = users.length + 1;
-
-    const newUser = {id, title, author, description}
-
-    users.push(newUser)
-
-    reply.code(201).send(newUser)
-
-})
-
-
-
-try {
-    server.listen({port: 3000})
-} catch (error) {
-    server.log.error(err)
-    process.exit(1)
 }
+
+turnOn()
